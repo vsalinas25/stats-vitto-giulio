@@ -1,29 +1,1386 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vitto & Giulio — Dashboard de Indicadores</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --green: #19903a;
+    --green-dim: rgba(25,144,58,0.3);
+    --green-glow: rgba(25,144,58,0.1);
+    --green-dark: #127a30;
+    --cream: #1a1a1a;
+    --cream-dim: rgba(0,0,0,0.45);
+    --cream-faint: rgba(0,0,0,0.06);
+    --bg: #efe9e0;
+    --bg-card: #faf8f4;
+    --bg-card2: #f2ede5;
+    --border: rgba(0,0,0,0.09);
+    --red: #b83232;
+    --red-dim: rgba(184,50,50,0.1);
+  }
 
-Vitto & Giulio
-DASHBOARD DE INDICADORES
-Semanal
-Mensal
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-Pedidos
-Volume de pedidos por período
+  body {
+    background: var(--bg);
+    color: var(--cream);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
 
-Faturamento
-Receita bruta por período
-Média: —
+  /* ── HEADER ── */
+  .header {
+    background: #faf8f4;
+    border-bottom: 1px solid var(--border);
+    padding: 20px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
 
-Ticket Médio
-Faturamento ÷ Pedidos
-Média: —
+  .header-brand { display: flex; align-items: center; gap: 14px; }
 
+  .brand-dot {
+    width: 36px; height: 36px;
+    background: var(--green);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .brand-dot svg { width: 20px; height: 20px; fill: var(--cream); }
 
+  .brand-name {
+    font-family: 'Fredoka', sans-serif;
+    font-size: 26px;
+    font-weight: 600;
+    color: var(--green);
+    letter-spacing: -0.3px;
+    line-height: 1;
+  }
+  .brand-sub {
+    font-size: 11px;
+    color: var(--cream-dim);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-top: 3px;
+  }
 
+  /* ── TOGGLE ── */
+  .toggle-pill {
+    display: flex;
+    background: #e4ddd4;
+    border: 1px solid var(--border);
+    border-radius: 40px;
+    padding: 4px;
+    gap: 2px;
+  }
+  .toggle-pill button {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 7px 22px;
+    border-radius: 36px;
+    border: none;
+    cursor: pointer;
+    transition: all 300ms ease;
+    background: transparent;
+    color: var(--cream-dim);
+  }
+  .toggle-pill button.active {
+    background: var(--green);
+    color: #fff;
+    box-shadow: 0 0 14px rgba(25,144,58,0.4);
+  }
 
+  /* ── MAIN LAYOUT ── */
+  .main { padding: 28px 32px; max-width: 1400px; margin: 0 auto; }
 
-1 / 3 — PEDIDOS
+  /* ── KPI CARDS ── */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 14px;
+    margin-bottom: 28px;
+  }
+  @media (max-width: 1100px) { .kpi-grid { grid-template-columns: repeat(3, 1fr); } }
+  @media (max-width: 700px)  { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 460px)  { .kpi-grid { grid-template-columns: 1fr; } }
 
-Adicionar Período
+  .kpi-card {
+    background: var(--bg-card);
+    border: 1px solid var(--green-dim);
+    border-radius: 12px;
+    padding: 18px 18px 16px 22px;
+    position: relative;
+    overflow: hidden;
+    transition: transform 200ms ease, box-shadow 200ms ease;
+  }
+  .kpi-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 28px rgba(0,0,0,0.1);
+  }
+  .kpi-card::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 4px;
+    background: var(--green);
+    border-radius: 12px 0 0 12px;
+  }
+  .kpi-label {
+    font-size: 10.5px;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--cream-dim);
+    margin-bottom: 8px;
+    font-weight: 500;
+  }
+  .kpi-value {
+    font-family: 'Fredoka', sans-serif;
+    font-size: 26px;
+    font-weight: 600;
+    color: var(--cream);
+    line-height: 1;
+    margin-bottom: 8px;
+    word-break: break-word;
+  }
+  .kpi-value.small { font-size: 20px; }
+  .kpi-meta {
+    font-size: 11px;
+    color: var(--cream-dim);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .kpi-arrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 20px;
+    margin-top: 6px;
+  }
+  .kpi-arrow.up   { background: rgba(25,144,58,0.18); color: var(--green); }
+  .kpi-arrow.down { background: var(--red-dim); color: var(--red); }
+  .kpi-arrow svg  { width: 12px; height: 12px; }
 
+  /* ── CAROUSEL ── */
+  .carousel {
+    position: relative;
+    margin-bottom: 20px;
+    padding: 0 28px;
+  }
 
-Tabela de Dados
+  .carousel-track-wrap {
+    overflow: hidden;
+    border-radius: 12px;
+  }
 
-Vitto & Giulio — Dashboard de Indicadores  ·  Dados desde Abril 2024
+  .carousel-track {
+    display: flex;
+    transition: transform 380ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .carousel-slide {
+    min-width: 100%;
+  }
+
+  .carousel-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 10;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--bg-card);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+    transition: all 200ms ease;
+    color: var(--cream);
+  }
+  .carousel-btn:hover {
+    background: var(--green);
+    border-color: var(--green);
+    color: #fff;
+    box-shadow: 0 4px 16px rgba(25,144,58,0.35);
+  }
+  .carousel-btn svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 2.5; }
+  .carousel-prev { left: -6px; }
+  .carousel-next { right: -6px; }
+
+  .carousel-footer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    margin-top: 14px;
+  }
+
+  .carousel-label {
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--cream-dim);
+    font-weight: 500;
+    min-width: 120px;
+    text-align: center;
+  }
+
+  .carousel-dots {
+    display: flex;
+    gap: 7px;
+    align-items: center;
+  }
+
+  .dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.15);
+    cursor: pointer;
+    transition: all 250ms ease;
+    border: none;
+    padding: 0;
+  }
+  .dot.active {
+    background: var(--green);
+    transform: scale(1.35);
+  }
+
+  .chart-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 20px 16px;
+  }
+  .chart-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .chart-title {
+    font-family: 'Fredoka', sans-serif;
+    font-size: 17px;
+    font-weight: 500;
+    color: var(--cream);
+  }
+  .chart-sub { font-size: 11px; color: var(--cream-dim); margin-top: 2px; }
+  .chart-avg-badge {
+    font-size: 11px;
+    background: var(--green-glow);
+    border: 1px solid var(--green-dim);
+    color: var(--green);
+    padding: 3px 10px;
+    border-radius: 20px;
+    white-space: nowrap;
+  }
+  .chart-wrap { position: relative; }
+
+  /* ── COLLAPSIBLE SECTIONS ── */
+  .section {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 16px;
+    overflow: hidden;
+  }
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    cursor: pointer;
+    user-select: none;
+    transition: background 200ms ease;
+  }
+  .section-header:hover { background: var(--bg-card2); }
+  .section-title {
+    font-family: 'Fredoka', sans-serif;
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--cream);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .section-title .icon {
+    width: 28px; height: 28px;
+    background: var(--green-glow);
+    border: 1px solid var(--green-dim);
+    border-radius: 7px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .section-title .icon svg { width: 14px; height: 14px; stroke: var(--green); fill: none; }
+  .chevron {
+    width: 20px; height: 20px;
+    stroke: var(--cream-dim);
+    fill: none;
+    transition: transform 300ms ease;
+  }
+  .section.open .chevron { transform: rotate(180deg); }
+  .section-body {
+    display: none;
+    border-top: 1px solid var(--border);
+  }
+  .section.open .section-body { display: block; }
+
+  /* ── FORM ── */
+  .form-inner { padding: 20px; }
+  .form-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr auto;
+    gap: 12px;
+    align-items: end;
+  }
+  @media (max-width: 700px) { .form-row { grid-template-columns: 1fr 1fr; } }
+
+  .field label {
+    display: block;
+    font-size: 11px;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--cream-dim);
+    margin-bottom: 6px;
+    font-weight: 500;
+  }
+  .field input {
+    width: 100%;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    color: var(--cream);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    outline: none;
+    transition: border-color 200ms ease;
+  }
+  .field input:focus { border-color: var(--green); }
+  .field input::placeholder { color: rgba(0,0,0,0.25); }
+
+  .btn-add {
+    padding: 10px 22px;
+    background: var(--green);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 200ms ease, box-shadow 200ms ease;
+    white-space: nowrap;
+  }
+  .btn-add:hover { background: var(--green-dark); box-shadow: 0 0 16px rgba(25,144,58,0.4); }
+
+  .form-msg {
+    margin-top: 10px;
+    font-size: 12px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    display: none;
+  }
+  .form-msg.error   { background: var(--red-dim); color: #922; border: 1px solid rgba(184,50,50,0.3); display: block; }
+  .form-msg.success { background: var(--green-glow); color: var(--green); border: 1px solid var(--green-dim); display: block; }
+
+  /* ── TABLE ── */
+  .table-inner { padding: 20px; }
+  .table-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .table-info { font-size: 12px; color: var(--cream-dim); }
+
+  .btn-export {
+    padding: 8px 18px;
+    background: transparent;
+    border: 1px solid var(--green-dim);
+    color: var(--green);
+    border-radius: 7px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 200ms ease;
+  }
+  .btn-export:hover { background: var(--green-glow); }
+
+  .btn-restore {
+    padding: 8px 18px;
+    background: transparent;
+    border: 1px solid var(--red-dim);
+    color: var(--red);
+    border-radius: 7px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 200ms ease;
+    display: none;
+  }
+  .btn-restore.visible { display: inline-block; }
+  .btn-restore:hover { background: var(--red-dim); }
+
+  .btn-del {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: rgba(0,0,0,0.2);
+    font-size: 15px;
+    line-height: 1;
+    padding: 2px 6px;
+    border-radius: 4px;
+    transition: all 150ms ease;
+  }
+  .btn-del:hover { color: var(--red); background: var(--red-dim); }
+
+  .table-scroll { overflow-x: auto; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  thead th {
+    padding: 10px 14px;
+    text-align: left;
+    font-size: 10.5px;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--cream-dim);
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+  }
+  thead th:hover { color: var(--cream); }
+  thead th .sort-icon { margin-left: 4px; opacity: 0.4; font-size: 10px; }
+  thead th.sorted .sort-icon { opacity: 1; color: var(--green); }
+
+  tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background 150ms ease;
+  }
+  tbody tr:hover { background: rgba(239,233,224,0.03); }
+  tbody td { padding: 10px 14px; color: var(--cream-dim); }
+  tbody td:first-child { color: var(--cream); font-weight: 500; }
+  tbody td.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+  .row-top    { background: rgba(25,144,58,0.08); }
+  .row-top td { color: var(--cream); }
+  .row-bottom { background: rgba(192,57,43,0.07); }
+
+  /* ── FOOTER ── */
+  .footer {
+    text-align: center;
+    padding: 28px;
+    font-size: 11px;
+    color: rgba(0,0,0,0.25);
+    border-top: 1px solid var(--border);
+    margin-top: 8px;
+  }
+
+  /* ── CUSTOM SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.25); }
+</style>
+</head>
+<body>
+
+<!-- ── HEADER ── -->
+<header class="header">
+  <div class="header-brand">
+    <div class="brand-dot">
+      <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>
+    </div>
+    <div>
+      <div class="brand-name">Vitto &amp; Giulio</div>
+      <div class="brand-sub">Dashboard de Indicadores</div>
+    </div>
+  </div>
+  <div class="toggle-pill">
+    <button id="btn-semanal" class="active" onclick="setView('semanal')">Semanal</button>
+    <button id="btn-mensal"  onclick="setView('mensal')">Mensal</button>
+  </div>
+</header>
+
+<main class="main">
+
+  <!-- ── KPI CARDS ── -->
+  <div class="kpi-grid" id="kpi-grid"></div>
+
+  <!-- ── CAROUSEL ── -->
+  <div class="carousel">
+    <button class="carousel-btn carousel-prev" onclick="carouselNav(-1)" aria-label="Anterior">
+      <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+
+    <div class="carousel-track-wrap">
+      <div class="carousel-track" id="carousel-track">
+
+        <div class="carousel-slide">
+          <div class="chart-card">
+            <div class="chart-header">
+              <div>
+                <div class="chart-title">Pedidos</div>
+                <div class="chart-sub">Volume de pedidos por período</div>
+              </div>
+            </div>
+            <div class="chart-wrap" style="height:60vh;min-height:340px">
+              <canvas id="chart-ped"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="carousel-slide">
+          <div class="chart-card">
+            <div class="chart-header">
+              <div>
+                <div class="chart-title">Faturamento</div>
+                <div class="chart-sub">Receita bruta por período</div>
+              </div>
+              <div class="chart-avg-badge" id="avg-fat-badge">Média: —</div>
+            </div>
+            <div class="chart-wrap" style="height:60vh;min-height:340px">
+              <canvas id="chart-fat"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="carousel-slide">
+          <div class="chart-card">
+            <div class="chart-header">
+              <div>
+                <div class="chart-title">Ticket Médio</div>
+                <div class="chart-sub">Faturamento ÷ Pedidos</div>
+              </div>
+              <div class="chart-avg-badge" id="avg-tk-badge">Média: —</div>
+            </div>
+            <div class="chart-wrap" style="height:60vh;min-height:340px">
+              <canvas id="chart-tk"></canvas>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <button class="carousel-btn carousel-next" onclick="carouselNav(1)" aria-label="Próximo">
+      <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+
+    <div class="carousel-footer">
+      <div class="carousel-dots">
+        <button class="dot active" onclick="carouselGo(0)"></button>
+        <button class="dot" onclick="carouselGo(1)"></button>
+        <button class="dot" onclick="carouselGo(2)"></button>
+      </div>
+      <div class="carousel-label" id="carousel-label">1 / 3 — Pedidos</div>
+    </div>
+  </div>
+
+  <!-- ── DATA ENTRY ── -->
+  <div class="section" id="sec-entry">
+    <div class="section-header" onclick="toggleSection('sec-entry')">
+      <div class="section-title">
+        <div class="icon">
+          <svg viewBox="0 0 24 24" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </div>
+        Adicionar Período
+      </div>
+      <svg class="chevron" viewBox="0 0 24 24" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+    </div>
+    <div class="section-body">
+      <div class="form-inner">
+        <div class="form-row">
+          <div class="field">
+            <label>Período (ex: 07/04 - 13/04)</label>
+            <input id="f-label" type="text" placeholder="DD/MM - DD/MM">
+          </div>
+          <div class="field">
+            <label>Faturamento (R$)</label>
+            <input id="f-fat" type="text" inputmode="decimal" placeholder="ex: 18.500,00">
+          </div>
+          <div class="field">
+            <label>Pedidos</label>
+            <input id="f-ped" type="number" min="1" step="1" placeholder="0">
+          </div>
+          <button class="btn-add" onclick="addEntry()">Adicionar</button>
+        </div>
+        <div class="form-msg" id="form-msg"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── DATA TABLE ── -->
+  <div class="section" id="sec-table">
+    <div class="section-header" onclick="toggleSection('sec-table')">
+      <div class="section-title">
+        <div class="icon">
+          <svg viewBox="0 0 24 24" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+        </div>
+        Tabela de Dados
+      </div>
+      <svg class="chevron" viewBox="0 0 24 24" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+    </div>
+    <div class="section-body">
+      <div class="table-inner">
+        <div class="table-toolbar">
+          <div class="table-info" id="table-info"></div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <button class="btn-restore" id="btn-restore" onclick="restoreAll()">↺ Restaurar excluídos</button>
+            <button class="btn-export" onclick="exportCSV()">↓ Exportar CSV</button>
+          </div>
+        </div>
+        <div class="table-scroll">
+          <table id="data-table">
+            <thead>
+              <tr>
+                <th onclick="sortTable(0)">Período <span class="sort-icon">↕</span></th>
+                <th onclick="sortTable(1)" class="num">Faturamento <span class="sort-icon">↕</span></th>
+                <th onclick="sortTable(2)" class="num">Pedidos <span class="sort-icon">↕</span></th>
+                <th onclick="sortTable(3)" class="num">Ticket Médio <span class="sort-icon">↕</span></th>
+                <th style="width:36px"></th>
+              </tr>
+            </thead>
+            <tbody id="table-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<footer class="footer">
+  Vitto &amp; Giulio — Dashboard de Indicadores &nbsp;·&nbsp; Dados desde Abril 2024
+</footer>
+
+<script>
+// ── DATA ──
+const BASE_DATA = {
+  faturamento: {
+    semanal: {
+      labels: [
+        "29/12 - 04/01","05/01 - 11/01","06/01 - 18/01",
+        "19/01 - 25/01","26/01 - 01/02","02/02 - 08/02","09/02 - 15/02",
+        "16/02 - 22/02","23/02 - 01/03","02/03 - 08/03","09/03 - 15/03",
+        "16/03 - 22/03","23/03 - 29/03","30/03 - 05/04","06/04 - 12/04"
+      ],
+      values: [
+        6267.27,20704.06,17270.63,19123.29,14547.24,16238.71,14113.38,
+        18947.69,18369.89,20668.39,18420.57,16160.36,17668.83,20139.22,19991.14
+      ]
+    },
+    mensal: {
+      labels: ["Janeiro","Fevereiro","Março"],
+      values: [69060.32,66483.25,77630.24]
+    }
+  },
+  pedidos: {
+    semanal: {
+      labels: [
+        "29/12 - 04/01","05/01 - 11/01","06/01 - 18/01",
+        "19/01 - 25/01","26/01 - 01/02","02/02 - 08/02","09/02 - 15/02",
+        "16/02 - 22/02","23/02 - 01/03","02/03 - 08/03","09/03 - 15/03",
+        "16/03 - 22/03","23/03 - 29/03","30/03 - 05/04","06/04 - 12/04"
+      ],
+      values: [
+        48,145,120,138,101,117,106,131,124,139,117,112,110,138,139
+      ]
+    },
+    mensal: {
+      labels: ["Janeiro","Fevereiro","Março"],
+      values: [484,471,510]
+    }
+  }
+};
+
+// ── STATE ──
+let currentView = 'semanal';
+let sortCol = -1;
+let sortDir = 1;
+let chartFat = null;
+let chartPed = null;
+let chartTk  = null;
+
+// ── LOCALSTORAGE MERGE ──
+function loadStoredEntries() {
+  try {
+    const stored = JSON.parse(localStorage.getItem('vg-entries') || '[]');
+    stored.forEach(e => {
+      const view = e.view || 'semanal';
+      BASE_DATA.faturamento[view].labels.push(e.label);
+      BASE_DATA.faturamento[view].values.push(e.fat);
+      BASE_DATA.pedidos[view].labels.push(e.label);
+      BASE_DATA.pedidos[view].values.push(e.ped);
+    });
+  } catch(_) {}
+}
+
+function saveEntry(label, fat, ped, view) {
+  const stored = JSON.parse(localStorage.getItem('vg-entries') || '[]');
+  stored.push({ label, fat, ped, view: view || 'semanal' });
+  localStorage.setItem('vg-entries', JSON.stringify(stored));
+}
+
+// ── HELPERS ──
+const BRL = v => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+const pct = v => (v >= 0 ? '+' : '') + v.toFixed(1) + '%';
+
+function getDeleted() {
+  return new Set(JSON.parse(localStorage.getItem(`vg-deleted-${currentView}`) || '[]'));
+}
+
+function getData() {
+  const fat = BASE_DATA.faturamento[currentView];
+  const ped = BASE_DATA.pedidos[currentView];
+  const deleted = getDeleted();
+  const labels = [], fatVals = [], pedVals = [];
+  fat.labels.forEach((l, i) => {
+    if (!deleted.has(l)) {
+      labels.push(l);
+      fatVals.push(fat.values[i]);
+      pedVals.push(ped.values[i]);
+    }
+  });
+  const tkVals = fatVals.map((f, i) => pedVals[i] > 0 ? f / pedVals[i] : 0);
+  return { labels, fatVals, pedVals, tkVals };
+}
+
+function deleteEntry(label) {
+  const key = `vg-deleted-${currentView}`;
+  const deleted = JSON.parse(localStorage.getItem(key) || '[]');
+  if (!deleted.includes(label)) deleted.push(label);
+  localStorage.setItem(key, JSON.stringify(deleted));
+  renderAll();
+}
+
+function restoreAll() {
+  localStorage.removeItem(`vg-deleted-${currentView}`);
+  renderAll();
+}
+
+function avg(arr) { return arr.reduce((a, b) => a + b, 0) / arr.length; }
+
+// ── KPI CARDS ──
+function renderKPIs() {
+  const { labels, fatVals, pedVals, tkVals } = getData();
+
+  const totalFat = fatVals.reduce((a, b) => a + b, 0);
+  const totalPed = pedVals.reduce((a, b) => a + b, 0);
+  const tkMedio  = totalFat / totalPed;
+
+  const maxFatIdx = fatVals.indexOf(Math.max(...fatVals));
+  const bestLabel = labels[maxFatIdx];
+  const bestVal   = fatVals[maxFatIdx];
+
+  // Growth: exclude first week (index 0) for semanal
+  let growthPct;
+  if (currentView === 'semanal') {
+    const start = fatVals[1];
+    const end   = fatVals[fatVals.length - 1];
+    growthPct = ((end - start) / start) * 100;
+  } else {
+    const start = fatVals[0];
+    const end   = fatVals[fatVals.length - 1];
+    growthPct = ((end - start) / start) * 100;
+  }
+
+  const arrowUp   = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>`;
+  const arrowDown = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>`;
+  const isUp = growthPct >= 0;
+
+  const cards = [
+    {
+      label: 'Faturamento Total',
+      value: BRL(totalFat),
+      meta: `${labels.length} períodos registrados`,
+      small: totalFat >= 100000
+    },
+    {
+      label: 'Total de Pedidos',
+      value: totalPed.toLocaleString('pt-BR'),
+      meta: `Média: ${(totalPed / labels.length).toFixed(1)} por período`
+    },
+    {
+      label: 'Ticket Médio',
+      value: BRL(tkMedio),
+      meta: `Mín: ${BRL(Math.min(...tkVals))} · Máx: ${BRL(Math.max(...tkVals))}`
+    },
+    {
+      label: 'Melhor Período',
+      value: BRL(bestVal),
+      meta: bestLabel,
+      small: true
+    },
+    {
+      label: 'Crescimento',
+      value: pct(growthPct),
+      meta: currentView === 'semanal' ? 'Da 2ª semana ao último período' : 'Do primeiro ao último mês',
+      arrow: `<div class="kpi-arrow ${isUp ? 'up' : 'down'}">${isUp ? arrowUp : arrowDown} ${Math.abs(growthPct).toFixed(1)}%</div>`
+    }
+  ];
+
+  document.getElementById('kpi-grid').innerHTML = cards.map(c => `
+    <div class="kpi-card">
+      <div class="kpi-label">${c.label}</div>
+      <div class="kpi-value${c.small ? ' small' : ''}">${c.value}</div>
+      ${c.arrow ? c.arrow : ''}
+      <div class="kpi-meta">${c.meta}</div>
+    </div>
+  `).join('');
+}
+
+// ── CHART DEFAULTS ──
+const GRID_COLOR  = 'rgba(0,0,0,0.07)';
+const TICK_COLOR  = 'rgba(0,0,0,0.4)';
+const GREEN       = '#19903a';
+const GREEN_FILL  = 'rgba(25,144,58,0.18)';
+const GREEN_DARK  = '#127a30';
+const CREAM       = '#1a1a1a';
+
+// Linear regression for trend line
+function linearRegression(values) {
+  const n = values.length;
+  let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
+  values.forEach((v, i) => { sumX += i; sumY += v; sumXY += i*v; sumX2 += i*i; });
+  const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+  const intercept = (sumY - slope * sumX) / n;
+  return values.map((_, i) => slope * i + intercept);
+}
+
+// Smart Y-axis: min = floor near actual min, max = ceil above actual max
+function smartScale(values) {
+  const mn = Math.min(...values);
+  const mx = Math.max(...values);
+  const range = mx - mn || mx;
+  const rawStep = range / 5;
+  const mag = Math.pow(10, Math.floor(Math.log10(rawStep)));
+  let step = mag * 10;
+  for (const ns of [1, 2, 2.5, 5, 10]) {
+    if (ns * mag >= rawStep) { step = ns * mag; break; }
+  }
+  return {
+    min: Math.floor(mn / step) * step,
+    max: Math.ceil(mx / step) * step + step
+  };
+}
+
+// Plugin: clean horizontal labels above each data point, staggered to avoid overlap
+const vgDataLabels = {
+  id: 'vgDataLabels',
+  afterDraw(chart) {
+    chart.data.datasets.forEach((ds, dsIdx) => {
+      if (!ds.showLabels) return;
+      const meta = chart.getDatasetMeta(dsIdx);
+      if (meta.hidden) return;
+      const { ctx } = chart;
+      const n = meta.data.length;
+
+      meta.data.forEach((point, i) => {
+        const val = ds.data[i];
+        if (val == null) return;
+        const label = ds.labelFmt ? ds.labelFmt(val) : String(val);
+
+        // Two-level stagger: even indices closer, odd indices higher up
+        // This separates adjacent labels vertically so they never overlap
+        const lift = (i % 2 === 0) ? 15 : 27;
+        const px = point.x;
+        const py = point.y - lift;
+
+        ctx.save();
+        ctx.font = '500 6.5px DM Sans';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        const tw = ctx.measureText(label).width;
+        const pw = tw + 5, ph = 10;
+
+        // Very subtle pill — light fill, barely-there border
+        ctx.fillStyle = 'rgba(239,233,224,0.92)';
+        ctx.strokeStyle = 'rgba(0,0,0,0.13)';
+        ctx.lineWidth = 0.5;
+        ctx.beginPath();
+        ctx.rect(px - pw / 2, py - ph / 2, pw, ph);
+        ctx.fill();
+        ctx.stroke();
+
+        // Crisp dark text
+        ctx.fillStyle = '#1a1a1a';
+        ctx.fillText(label, px, py);
+        ctx.restore();
+      });
+    });
+  }
+};
+
+function baseChartOpts(yFmt, minY, maxY) {
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: { duration: 400, easing: 'easeInOutQuart' },
+    layout: { padding: { top: 36 } },
+    plugins: {
+      legend: { display: false },
+      tooltip: { enabled: false }
+    },
+    scales: {
+      x: {
+        grid: { color: GRID_COLOR, drawBorder: false },
+        ticks: {
+          color: TICK_COLOR,
+          font: { family: 'DM Sans', size: 11 },
+          maxRotation: 45,
+          autoSkip: true,
+          maxTicksLimit: 14
+        },
+        border: { display: false }
+      },
+      y: {
+        min: minY,
+        max: maxY,
+        grid: { color: GRID_COLOR, drawBorder: false },
+        ticks: {
+          color: TICK_COLOR,
+          font: { family: 'DM Sans', size: 11 },
+          callback: yFmt
+        },
+        border: { display: false }
+      }
+    }
+  };
+}
+
+// ── CHART: FATURAMENTO ──
+function renderChartFat() {
+  const { labels, fatVals, pedVals, tkVals } = getData();
+  const avgVal = avg(fatVals);
+  const trend  = linearRegression(fatVals);
+  const { min: minY, max: maxY } = smartScale(fatVals);
+
+  document.getElementById('avg-fat-badge').textContent = `Média: ${BRL(avgVal)}`;
+
+  const ctx = document.getElementById('chart-fat').getContext('2d');
+  const grad = ctx.createLinearGradient(0, 0, 0, 350);
+  grad.addColorStop(0, 'rgba(25,144,58,0.18)');
+  grad.addColorStop(1, 'rgba(25,144,58,0)');
+
+  if (chartFat) chartFat.destroy();
+
+  const avgLine = {
+    id: 'avgLine',
+    afterDatasetsDraw(chart) {
+      const { ctx, scales: { x, y } } = chart;
+      const yPos = y.getPixelForValue(avgVal);
+      ctx.save();
+      ctx.setLineDash([6, 4]);
+      ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(x.left, yPos);
+      ctx.lineTo(x.right, yPos);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = 'rgba(0,0,0,0.4)';
+      ctx.font = '10px DM Sans';
+      ctx.fillText('Média', x.right - 38, yPos - 5);
+      ctx.restore();
+    }
+  };
+
+  const tooltipPlugin = {
+    id: 'vgTooltip',
+    afterEvent(chart, args) {
+      if (args.event.type !== 'mousemove' && args.event.type !== 'mouseout') return;
+      chart.canvas.style.cursor = args.event.type === 'mousemove' ? 'crosshair' : 'default';
+    },
+    afterDraw(chart) {
+      const active = chart.getActiveElements();
+      if (!active.length) return;
+      const idx = active[0].index;
+      const { ctx, scales: { x, y } } = chart;
+      const xPos = x.getPixelForValue(idx);
+      const yPos = y.getPixelForValue(fatVals[idx]);
+
+      ctx.save();
+      ctx.strokeStyle = 'rgba(0,0,0,0.15)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([]);
+      ctx.beginPath();
+      ctx.moveTo(xPos, y.top);
+      ctx.lineTo(xPos, y.bottom);
+      ctx.stroke();
+
+      const tw = 200, th = 80;
+      let tx = xPos + 14;
+      let ty = Math.max(yPos - 40, y.top + 8);
+      if (tx + tw > chart.width - 10) tx = xPos - tw - 14;
+
+      ctx.fillStyle = '#faf8f4';
+      ctx.strokeStyle = 'rgba(25,144,58,0.5)';
+      ctx.lineWidth = 1;
+      roundRect(ctx, tx, ty, tw, th, 8);
+      ctx.fill(); ctx.stroke();
+
+      ctx.fillStyle = CREAM;
+      ctx.font = '600 12px DM Sans';
+      ctx.fillText(labels[idx], tx + 12, ty + 18);
+      ctx.fillStyle = GREEN;
+      ctx.font = '700 14px DM Sans';
+      ctx.fillText(BRL(fatVals[idx]), tx + 12, ty + 36);
+      ctx.fillStyle = 'rgba(0,0,0,0.45)';
+      ctx.font = '11px DM Sans';
+      ctx.fillText(`${pedVals[idx]} pedidos · TM ${BRL(tkVals[idx])}`, tx + 12, ty + 55);
+      ctx.restore();
+    }
+  };
+
+  chartFat = new Chart(ctx, {
+    type: 'line',
+    plugins: [avgLine, tooltipPlugin, vgDataLabels],
+    data: {
+      labels,
+      datasets: [
+        {
+          data: fatVals,
+          borderColor: GREEN,
+          backgroundColor: grad,
+          fill: true,
+          tension: 0,
+          pointRadius: 3,
+          pointBackgroundColor: GREEN,
+          pointBorderColor: '#faf8f4',
+          pointBorderWidth: 1,
+          pointHoverRadius: 5,
+          pointHoverBackgroundColor: GREEN,
+          pointHoverBorderColor: '#fff',
+          pointHoverBorderWidth: 2,
+          borderWidth: 2,
+          showLabels: true,
+          labelFmt: v => v >= 1000 ? 'R$' + (v / 1000).toFixed(1) + 'k' : 'R$' + v.toFixed(0)
+        },
+        {
+          data: trend,
+          borderColor: 'rgba(180,50,50,0.75)',
+          backgroundColor: 'transparent',
+          fill: false,
+          tension: 0,
+          pointRadius: 0,
+          borderWidth: 1.5,
+          borderDash: [6, 4],
+          showLabels: false
+        }
+      ]
+    },
+    options: {
+      ...baseChartOpts(v => v >= 1000 ? 'R$' + (v / 1000).toFixed(0) + 'k' : 'R$' + v.toFixed(0), minY, maxY),
+      interaction: { mode: 'index', intersect: false },
+      plugins: { legend: { display: false }, tooltip: { enabled: false } }
+    }
+  });
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+// ── CHART: PEDIDOS ──
+function renderChartPed() {
+  const { labels, pedVals } = getData();
+  const trend = linearRegression(pedVals);
+  const { min: minY, max: maxY } = smartScale(pedVals);
+  if (chartPed) chartPed.destroy();
+
+  const ctx = document.getElementById('chart-ped').getContext('2d');
+  chartPed = new Chart(ctx, {
+    type: 'line',
+    plugins: [vgDataLabels],
+    data: {
+      labels,
+      datasets: [
+        {
+          data: pedVals,
+          borderColor: GREEN,
+          backgroundColor: 'rgba(25,144,58,0.08)',
+          fill: true,
+          tension: 0,
+          pointRadius: 3,
+          pointBackgroundColor: GREEN,
+          pointBorderColor: '#faf8f4',
+          pointBorderWidth: 1,
+          pointHoverRadius: 5,
+          borderWidth: 2,
+          showLabels: true,
+          labelFmt: v => String(Math.round(v))
+        },
+        {
+          data: trend,
+          borderColor: 'rgba(180,50,50,0.75)',
+          backgroundColor: 'transparent',
+          fill: false,
+          tension: 0,
+          pointRadius: 0,
+          borderWidth: 1.5,
+          borderDash: [6, 4],
+          showLabels: false
+        }
+      ]
+    },
+    options: {
+      ...baseChartOpts(v => Math.round(v).toLocaleString('pt-BR'), minY, maxY),
+      plugins: { legend: { display: false }, tooltip: { enabled: false } }
+    }
+  });
+}
+
+// ── CHART: TICKET MÉDIO ──
+function renderChartTk() {
+  const { labels, tkVals } = getData();
+  const avgTk = avg(tkVals);
+  const maxTk = Math.max(...tkVals);
+  const minTk = Math.min(...tkVals);
+  const trend  = linearRegression(tkVals);
+  const { min: minY, max: maxY } = smartScale(tkVals);
+
+  document.getElementById('avg-tk-badge').textContent = `Média: ${BRL(avgTk)}`;
+
+  if (chartTk) chartTk.destroy();
+
+  const ctx = document.getElementById('chart-tk').getContext('2d');
+
+  chartTk = new Chart(ctx, {
+    type: 'line',
+    plugins: [vgDataLabels],
+    data: {
+      labels,
+      datasets: [
+        {
+          data: tkVals,
+          borderColor: GREEN,
+          backgroundColor: 'rgba(25,144,58,0.08)',
+          fill: true,
+          tension: 0,
+          pointRadius: tkVals.map(v => (v === maxTk || v === minTk) ? 5 : 3),
+          pointBackgroundColor: tkVals.map(v => v === maxTk ? '#2ecc71' : v === minTk ? '#e74c3c' : GREEN),
+          pointBorderColor: '#faf8f4',
+          pointBorderWidth: 1,
+          pointHoverRadius: 6,
+          borderWidth: 2,
+          showLabels: true,
+          labelFmt: v => 'R$' + v.toFixed(0)
+        },
+        {
+          data: trend,
+          borderColor: 'rgba(180,50,50,0.75)',
+          backgroundColor: 'transparent',
+          fill: false,
+          tension: 0,
+          pointRadius: 0,
+          borderWidth: 1.5,
+          borderDash: [6, 4],
+          showLabels: false
+        }
+      ]
+    },
+    options: {
+      ...baseChartOpts(v => 'R$' + v.toFixed(0), minY, maxY),
+      plugins: { legend: { display: false }, tooltip: { enabled: false } }
+    }
+  });
+}
+
+// ── TABLE ──
+function renderTable() {
+  const { labels, fatVals, pedVals, tkVals } = getData();
+  const n = labels.length;
+  const top20  = Math.ceil(n * 0.2);
+  const bot20  = Math.ceil(n * 0.2);
+
+  let rows = labels.map((l, i) => ({ l, f: fatVals[i], p: pedVals[i], t: tkVals[i] }));
+
+  if (sortCol === 0) rows.sort((a, b) => sortDir * a.l.localeCompare(b.l));
+  else if (sortCol === 1) rows.sort((a, b) => sortDir * (a.f - b.f));
+  else if (sortCol === 2) rows.sort((a, b) => sortDir * (a.p - b.p));
+  else if (sortCol === 3) rows.sort((a, b) => sortDir * (a.t - b.t));
+
+  const sorted = [...rows].sort((a, b) => b.f - a.f);
+  const topSet = new Set(sorted.slice(0, top20).map(r => r.l + r.f));
+  const botSet = new Set(sorted.slice(-bot20).map(r => r.l + r.f));
+
+  const hasDeleted = getDeleted().size > 0;
+  const restoreBtn = document.getElementById('btn-restore');
+  if (restoreBtn) restoreBtn.classList.toggle('visible', hasDeleted);
+
+  document.getElementById('table-info').textContent = `${n} períodos`;
+  document.getElementById('table-body').innerHTML = rows.map(r => {
+    const key = r.l + r.f;
+    const cls = topSet.has(key) ? 'row-top' : botSet.has(key) ? 'row-bottom' : '';
+    const label = r.l.replace(/'/g, "\\'");
+    return `<tr class="${cls}">
+      <td>${r.l}</td>
+      <td class="num">${BRL(r.f)}</td>
+      <td class="num">${r.p.toLocaleString('pt-BR')}</td>
+      <td class="num">${BRL(r.t)}</td>
+      <td><button class="btn-del" onclick="deleteEntry('${label}')" title="Excluir">✕</button></td>
+    </tr>`;
+  }).join('');
+
+  const ths = document.querySelectorAll('#data-table thead th');
+  ths.forEach((th, i) => {
+    th.classList.toggle('sorted', i === sortCol);
+    const icon = th.querySelector('.sort-icon');
+    if (icon) icon.textContent = i === sortCol ? (sortDir === 1 ? '↑' : '↓') : '↕';
+  });
+}
+
+function sortTable(col) {
+  if (sortCol === col) sortDir *= -1;
+  else { sortCol = col; sortDir = 1; }
+  renderTable();
+}
+
+// ── ADD ENTRY ──
+function parseBRL(str) {
+  // Accept both "18000", "18.000", "18.000,50", "18000.50"
+  const s = str.trim().replace(/\./g, '').replace(',', '.');
+  return parseFloat(s);
+}
+
+function addEntry() {
+  const label = document.getElementById('f-label').value.trim();
+  const fat   = parseBRL(document.getElementById('f-fat').value);
+  const ped   = parseInt(document.getElementById('f-ped').value.trim(), 10);
+  const msg   = document.getElementById('form-msg');
+
+  msg.className = 'form-msg';
+  msg.style.display = 'none';
+
+  if (!label || isNaN(fat) || isNaN(ped)) {
+    msg.className = 'form-msg error';
+    msg.textContent = 'Preencha todos os campos corretamente.';
+    return;
+  }
+  if (fat <= 0 || ped <= 0) {
+    msg.className = 'form-msg error';
+    msg.textContent = 'Faturamento e pedidos devem ser maiores que zero.';
+    return;
+  }
+
+  // Push to whichever view is active
+  BASE_DATA.faturamento[currentView].labels.push(label);
+  BASE_DATA.faturamento[currentView].values.push(fat);
+  BASE_DATA.pedidos[currentView].labels.push(label);
+  BASE_DATA.pedidos[currentView].values.push(ped);
+  saveEntry(label, fat, ped, currentView);
+
+  document.getElementById('f-label').value = '';
+  document.getElementById('f-fat').value   = '';
+  document.getElementById('f-ped').value   = '';
+
+  msg.className = 'form-msg success';
+  msg.textContent = `Período "${label}" adicionado em ${currentView === 'semanal' ? 'Semanal' : 'Mensal'}.`;
+  setTimeout(() => { msg.style.display = 'none'; }, 3000);
+
+  renderAll();
+}
+
+// ── EXPORT CSV ──
+function exportCSV() {
+  const { labels, fatVals, pedVals, tkVals } = getData();
+  const rows = [['Período','Faturamento (R$)','Pedidos','Ticket Médio (R$)']];
+  labels.forEach((l, i) => rows.push([l, fatVals[i].toFixed(2), pedVals[i], tkVals[i].toFixed(2)]));
+  const csv = rows.map(r => r.map(c => `"${c}"`).join(',')).join('\n');
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url;
+  a.download = `vitto-giulio-${currentView}-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ── COLLAPSIBLE ──
+function toggleSection(id) {
+  document.getElementById(id).classList.toggle('open');
+}
+
+// ── VIEW TOGGLE ──
+function setView(view) {
+  currentView = view;
+  document.getElementById('btn-semanal').classList.toggle('active', view === 'semanal');
+  document.getElementById('btn-mensal').classList.toggle('active', view === 'mensal');
+  sortCol = -1; sortDir = 1;
+  renderAll();
+}
+
+function renderAll() {
+  renderKPIs();
+  renderChartFat();
+  renderChartPed();
+  renderChartTk();
+  renderTable();
+}
+
+// ── CAROUSEL ──
+const CAROUSEL_LABELS = ['1 / 3 — Pedidos', '2 / 3 — Faturamento', '3 / 3 — Ticket Médio'];
+let carouselIdx = 0;
+
+function carouselNav(dir) {
+  carouselGo((carouselIdx + dir + 3) % 3);
+}
+
+function carouselGo(idx) {
+  carouselIdx = idx;
+  document.getElementById('carousel-track').style.transform = `translateX(-${idx * 100}%)`;
+  document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === idx));
+  document.getElementById('carousel-label').textContent = CAROUSEL_LABELS[idx];
+  // Let Chart.js re-measure after the CSS transition settles
+  setTimeout(() => {
+    if (chartPed) chartPed.resize();
+    if (chartFat) chartFat.resize();
+    if (chartTk)  chartTk.resize();
+  }, 400);
+}
+
+// ── INIT ──
+loadStoredEntries();
+renderAll();
+</script>
+</body>
+</html>
