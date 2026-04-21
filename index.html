@@ -428,6 +428,35 @@
   }
   .btn-export:hover { background: var(--green-glow); }
 
+  .btn-restore {
+    padding: 8px 18px;
+    background: transparent;
+    border: 1px solid var(--red-dim);
+    color: var(--red);
+    border-radius: 7px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 200ms ease;
+    display: none;
+  }
+  .btn-restore.visible { display: inline-block; }
+  .btn-restore:hover { background: var(--red-dim); }
+
+  .btn-del {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: rgba(0,0,0,0.2);
+    font-size: 15px;
+    line-height: 1;
+    padding: 2px 6px;
+    border-radius: 4px;
+    transition: all 150ms ease;
+  }
+  .btn-del:hover { color: var(--red); background: var(--red-dim); }
+
   .table-scroll { overflow-x: auto; }
 
   table {
@@ -623,7 +652,10 @@
       <div class="table-inner">
         <div class="table-toolbar">
           <div class="table-info" id="table-info"></div>
-          <button class="btn-export" onclick="exportCSV()">↓ Exportar CSV</button>
+          <div style="display:flex;gap:8px;align-items:center">
+            <button class="btn-restore" id="btn-restore" onclick="restoreAll()">↺ Restaurar excluídos</button>
+            <button class="btn-export" onclick="exportCSV()">↓ Exportar CSV</button>
+          </div>
         </div>
         <div class="table-scroll">
           <table id="data-table">
@@ -633,6 +665,7 @@
                 <th onclick="sortTable(1)" class="num">Faturamento <span class="sort-icon">↕</span></th>
                 <th onclick="sortTable(2)" class="num">Pedidos <span class="sort-icon">↕</span></th>
                 <th onclick="sortTable(3)" class="num">Ticket Médio <span class="sort-icon">↕</span></th>
+                <th style="width:36px"></th>
               </tr>
             </thead>
             <tbody id="table-body"></tbody>
@@ -719,14 +752,37 @@ function saveEntry(label, fat, ped) {
 const BRL = v => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const pct = v => (v >= 0 ? '+' : '') + v.toFixed(1) + '%';
 
+function getDeleted() {
+  return new Set(JSON.parse(localStorage.getItem(`vg-deleted-${currentView}`) || '[]'));
+}
+
 function getData() {
   const fat = BASE_DATA.faturamento[currentView];
   const ped = BASE_DATA.pedidos[currentView];
-  const labels = fat.labels;
-  const fatVals = fat.values;
-  const pedVals = ped.values;
-  const tkVals  = fatVals.map((f, i) => pedVals[i] > 0 ? f / pedVals[i] : 0);
+  const deleted = getDeleted();
+  const labels = [], fatVals = [], pedVals = [];
+  fat.labels.forEach((l, i) => {
+    if (!deleted.has(l)) {
+      labels.push(l);
+      fatVals.push(fat.values[i]);
+      pedVals.push(ped.values[i]);
+    }
+  });
+  const tkVals = fatVals.map((f, i) => pedVals[i] > 0 ? f / pedVals[i] : 0);
   return { labels, fatVals, pedVals, tkVals };
+}
+
+function deleteEntry(label) {
+  const key = `vg-deleted-${currentView}`;
+  const deleted = JSON.parse(localStorage.getItem(key) || '[]');
+  if (!deleted.includes(label)) deleted.push(label);
+  localStorage.setItem(key, JSON.stringify(deleted));
+  renderAll();
+}
+
+function restoreAll() {
+  localStorage.removeItem(`vg-deleted-${currentView}`);
+  renderAll();
 }
 
 function avg(arr) { return arr.reduce((a, b) => a + b, 0) / arr.length; }
@@ -1186,15 +1242,21 @@ function renderTable() {
   const topSet = new Set(sorted.slice(0, top20).map(r => r.l + r.f));
   const botSet = new Set(sorted.slice(-bot20).map(r => r.l + r.f));
 
+  const hasDeleted = getDeleted().size > 0;
+  const restoreBtn = document.getElementById('btn-restore');
+  if (restoreBtn) restoreBtn.classList.toggle('visible', hasDeleted);
+
   document.getElementById('table-info').textContent = `${n} períodos`;
   document.getElementById('table-body').innerHTML = rows.map(r => {
     const key = r.l + r.f;
     const cls = topSet.has(key) ? 'row-top' : botSet.has(key) ? 'row-bottom' : '';
+    const label = r.l.replace(/'/g, "\\'");
     return `<tr class="${cls}">
       <td>${r.l}</td>
       <td class="num">${BRL(r.f)}</td>
       <td class="num">${r.p.toLocaleString('pt-BR')}</td>
       <td class="num">${BRL(r.t)}</td>
+      <td><button class="btn-del" onclick="deleteEntry('${label}')" title="Excluir">✕</button></td>
     </tr>`;
   }).join('');
 
