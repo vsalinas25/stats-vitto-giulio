@@ -1302,7 +1302,26 @@ function addEntry() {
     return;
   }
 
-  // Push to whichever view is active
+  // 1. Remove from deleted set so the label becomes visible again
+  const delKey = `vg-deleted-${currentView}`;
+  const deleted = JSON.parse(localStorage.getItem(delKey) || '[]');
+  const cleanDeleted = deleted.filter(l => l !== label);
+  localStorage.setItem(delKey, JSON.stringify(cleanDeleted));
+
+  // 2. Remove any previous entry with this label from localStorage and BASE_DATA
+  const stored = JSON.parse(localStorage.getItem('vg-entries') || '[]');
+  const cleanStored = stored.filter(e => !(e.label === label && e.view === currentView));
+  localStorage.setItem('vg-entries', JSON.stringify(cleanStored));
+
+  ['faturamento', 'pedidos'].forEach(metric => {
+    const idx = BASE_DATA[metric][currentView].labels.indexOf(label);
+    if (idx !== -1) {
+      BASE_DATA[metric][currentView].labels.splice(idx, 1);
+      BASE_DATA[metric][currentView].values.splice(idx, 1);
+    }
+  });
+
+  // 3. Add the new entry
   BASE_DATA.faturamento[currentView].labels.push(label);
   BASE_DATA.faturamento[currentView].values.push(fat);
   BASE_DATA.pedidos[currentView].labels.push(label);
@@ -1314,7 +1333,7 @@ function addEntry() {
   document.getElementById('f-ped').value   = '';
 
   msg.className = 'form-msg success';
-  msg.textContent = `Período "${label}" adicionado em ${currentView === 'semanal' ? 'Semanal' : 'Mensal'}.`;
+  msg.textContent = `Período "${label}" adicionado com sucesso.`;
   setTimeout(() => { msg.style.display = 'none'; }, 3000);
 
   renderAll();
