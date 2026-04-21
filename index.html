@@ -734,17 +734,18 @@ function loadStoredEntries() {
   try {
     const stored = JSON.parse(localStorage.getItem('vg-entries') || '[]');
     stored.forEach(e => {
-      BASE_DATA.faturamento.semanal.labels.push(e.label);
-      BASE_DATA.faturamento.semanal.values.push(e.fat);
-      BASE_DATA.pedidos.semanal.labels.push(e.label);
-      BASE_DATA.pedidos.semanal.values.push(e.ped);
+      const view = e.view || 'semanal';
+      BASE_DATA.faturamento[view].labels.push(e.label);
+      BASE_DATA.faturamento[view].values.push(e.fat);
+      BASE_DATA.pedidos[view].labels.push(e.label);
+      BASE_DATA.pedidos[view].values.push(e.ped);
     });
   } catch(_) {}
 }
 
-function saveEntry(label, fat, ped) {
+function saveEntry(label, fat, ped, view) {
   const stored = JSON.parse(localStorage.getItem('vg-entries') || '[]');
-  stored.push({ label, fat, ped });
+  stored.push({ label, fat, ped, view: view || 'semanal' });
   localStorage.setItem('vg-entries', JSON.stringify(stored));
 }
 
@@ -1275,10 +1276,16 @@ function sortTable(col) {
 }
 
 // ── ADD ENTRY ──
+function parseBRL(str) {
+  // Accept both "18000", "18.000", "18.000,50", "18000.50"
+  const s = str.trim().replace(/\./g, '').replace(',', '.');
+  return parseFloat(s);
+}
+
 function addEntry() {
   const label = document.getElementById('f-label').value.trim();
-  const fat   = parseFloat(document.getElementById('f-fat').value);
-  const ped   = parseInt(document.getElementById('f-ped').value, 10);
+  const fat   = parseBRL(document.getElementById('f-fat').value);
+  const ped   = parseInt(document.getElementById('f-ped').value.trim(), 10);
   const msg   = document.getElementById('form-msg');
 
   msg.className = 'form-msg';
@@ -1295,18 +1302,19 @@ function addEntry() {
     return;
   }
 
-  BASE_DATA.faturamento.semanal.labels.push(label);
-  BASE_DATA.faturamento.semanal.values.push(fat);
-  BASE_DATA.pedidos.semanal.labels.push(label);
-  BASE_DATA.pedidos.semanal.values.push(ped);
-  saveEntry(label, fat, ped);
+  // Push to whichever view is active
+  BASE_DATA.faturamento[currentView].labels.push(label);
+  BASE_DATA.faturamento[currentView].values.push(fat);
+  BASE_DATA.pedidos[currentView].labels.push(label);
+  BASE_DATA.pedidos[currentView].values.push(ped);
+  saveEntry(label, fat, ped, currentView);
 
   document.getElementById('f-label').value = '';
   document.getElementById('f-fat').value   = '';
   document.getElementById('f-ped').value   = '';
 
   msg.className = 'form-msg success';
-  msg.textContent = `Período "${label}" adicionado com sucesso.`;
+  msg.textContent = `Período "${label}" adicionado em ${currentView === 'semanal' ? 'Semanal' : 'Mensal'}.`;
   setTimeout(() => { msg.style.display = 'none'; }, 3000);
 
   renderAll();
