@@ -1308,17 +1308,17 @@ function addEntry() {
   const cleanDeleted = deleted.filter(l => l !== label);
   localStorage.setItem(delKey, JSON.stringify(cleanDeleted));
 
-  // 2. Remove any previous entry with this label from localStorage and BASE_DATA
+  // 2. Remove ALL copies of this label from localStorage and BASE_DATA
   const stored = JSON.parse(localStorage.getItem('vg-entries') || '[]');
-  const cleanStored = stored.filter(e => !(e.label === label && e.view === currentView));
-  localStorage.setItem('vg-entries', JSON.stringify(cleanStored));
+  localStorage.setItem('vg-entries', JSON.stringify(
+    stored.filter(e => !(e.label === label && (e.view || 'semanal') === currentView))
+  ));
 
   ['faturamento', 'pedidos'].forEach(metric => {
-    const idx = BASE_DATA[metric][currentView].labels.indexOf(label);
-    if (idx !== -1) {
-      BASE_DATA[metric][currentView].labels.splice(idx, 1);
-      BASE_DATA[metric][currentView].values.splice(idx, 1);
-    }
+    const cur = BASE_DATA[metric][currentView];
+    const keep = cur.labels.map((l, i) => i).filter(i => cur.labels[i] !== label);
+    BASE_DATA[metric][currentView].labels = keep.map(i => cur.labels[i]);
+    BASE_DATA[metric][currentView].values = keep.map(i => cur.values[i]);
   });
 
   // 3. Add the new entry
